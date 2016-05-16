@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using LeePathfinderLib;
 
 //Based on: http://blog.two-cats.com/2014/06/a-star-example/
 namespace MazePathfinderLib
 {
-    //Todo: implement backtrace, refactor
-
+    //Todo: refactor
     public class AStarPathfinder
     {
         private readonly int _columnCount;
@@ -13,7 +13,10 @@ namespace MazePathfinderLib
         private readonly int _rowCount;
         private readonly Node _startNode;
         private readonly Node[,] _maze;
-        public AStarPathfinder(int[,] maze)
+        private bool _foundWay;
+        public bool IsOctaDirectional//returns if we can move on diagonals
+        { get; private set;}
+        public AStarPathfinder(int[,] maze, bool isOctaDirectional=false)
         {
             _rowCount = maze.GetLength(0);
             _columnCount = maze.GetLength(1);
@@ -42,17 +45,47 @@ namespace MazePathfinderLib
 
         public bool Solve()
         {
-            return Search(_startNode);
+            if (!_foundWay)
+                _foundWay = Search(_startNode);
+            return _foundWay;
         }
 
-        private static IEnumerable<Cell> GetAdjacentLocations(Cell fromLocation)
+        public IEnumerable<Cell> Bactkrace()
         {
+            if(!_foundWay)
+                throw new InvalidOperationException("There is no way from begginign to end, or Solve was not called");
+            var path = new List<Cell>();
+            var node = _endNode;
+            while (node.ParentNode!=null)
+            {
+                path.Add(node.Location);
+                node = node.ParentNode;
+            }
+            path.Add(_startNode.Location);
+            path.Reverse();
+            return path;
+        }
+
+        private IEnumerable<Cell> GetAdjacentLocations(Cell fromLocation)
+        {
+            if(!IsOctaDirectional)
             return new[]
             {
                 new Cell(fromLocation.Row-1, fromLocation.Column),
                 new Cell(fromLocation.Row,  fromLocation.Column+1),
                 new Cell(fromLocation.Row+1, fromLocation.Column),
                 new Cell(fromLocation.Row,   fromLocation.Column-1)
+            };
+            return new[]
+            {
+                new Cell(fromLocation.Row - 1, fromLocation.Column - 1),
+                new Cell(fromLocation.Row - 1, fromLocation.Column),
+                new Cell(fromLocation.Row - 1, fromLocation.Column + 1),
+                new Cell(fromLocation.Row, fromLocation.Column + 1),
+                new Cell(fromLocation.Row + 1, fromLocation.Column + 1),
+                new Cell(fromLocation.Row + 1, fromLocation.Column),
+                new Cell(fromLocation.Row + 1, fromLocation.Column - 1),
+                new Cell(fromLocation.Row, fromLocation.Column - 1)
             };
         }
 
@@ -111,52 +144,6 @@ namespace MazePathfinderLib
                     return true;
             }
             return false;
-        }
-    }
-
-    public class Node
-    {
-        internal readonly bool IsWalkable;
-
-        internal Cell Location;
-
-        private Node _parentNode;
-
-        public Node(int row, int column, bool isWalkable, Cell endLocation)
-        {
-            Location = new Cell(row, column);
-            State = NodeState.Untested;
-            IsWalkable = isWalkable;
-            H = GetTraversalCost(Location, endLocation);
-            G = 0;
-        }
-
-        public enum NodeState
-        {
-            Untested,
-            Open,
-            Closed
-        }
-        public float F => G + H;
-
-        public float G { get; private set; }
-        public float H { get; private set; }
-        public Node ParentNode
-        {
-            get { return _parentNode; }
-            set
-            {
-                _parentNode = value;
-                G = _parentNode.G + GetTraversalCost(Location, _parentNode.Location);
-            }
-        }
-
-        public NodeState State { get; set; }
-        internal static float GetTraversalCost(Cell location, Cell otherLocation)
-        {
-            float deltaX = otherLocation.Row - location.Row;
-            float deltaY = otherLocation.Column - location.Column;
-            return (float)Math.Sqrt(deltaX * deltaX + deltaY * deltaY);
         }
     }
 }

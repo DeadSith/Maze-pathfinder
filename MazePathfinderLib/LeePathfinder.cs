@@ -1,26 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using LeePathfinderLib;
 
 namespace MazePathfinderLib
 {
-    public struct Cell
-    {
-        public int Column;
-
-        public int Row;
-
-        public Cell(Cell input)
-        {
-            Row = input.Row;
-            Column = input.Column;
-        }
-
-        public Cell(int row, int column)
-        {
-            Row = row;
-            Column = column;
-        }
-    }
+   
 
     public class LeePathfinder
     {
@@ -95,6 +79,7 @@ namespace MazePathfinderLib
                 }
                 next = current;
             }
+            path.Reverse();
             return path;
         }
 
